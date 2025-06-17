@@ -53,6 +53,12 @@ func (e *expense) fromCsv(data []string) {
 	e.amount = float32(temp)
 }
 
+// Метод вывода в консоль объекта
+func (e *expense) print() {
+	fmt.Printf("%d\t%s\t%s\t%f\n",
+		e.id, e.date.Format("02-01-2006"), e.desc, e.amount)
+}
+
 // Читает из файла 'filename'.csv данные
 func readCsv(fileName string) [][]string {
 	file, err := os.Open(fileName)
@@ -103,6 +109,11 @@ func getId() int {
 	return id
 }
 
+// Удалить элемент по id со сдвигом из arr
+func removeElem(arr []expense, id int) []expense {
+	return append(arr[:id], arr[id+1:]...)
+}
+
 func main() {
 	// Реализация добавления
 	if len(os.Args) == 6 &&
@@ -128,11 +139,47 @@ func main() {
 			expenseList = append(expenseList, *temp)
 		}
 	}
-	// temp := new(expense)
-	// temp.fromCsv(data[0])
-	// fmt.Println("", temp.toCsv())
-	// temp := &expense{0, time.Now(), "Temporary", 20}
-	// fmt.Println("", temp.toCsv())
-	// writeCsv("data.csv", [][]string{temp.toCsv()})
-	// fmt.Println("Param: ", os.Args[1])
+	// Реализация отображения всех элементов
+	if len(os.Args) == 2 && os.Args[1] == "list" {
+		fmt.Println("ID\tDate\tDescription\tAmount")
+		if len(expenseList) == 0 {
+			return
+		}
+		for _, obj := range expenseList {
+			obj.print()
+		}
+		return
+		//Реализация получения общей суммы трат
+	} else if len(os.Args) == 2 && os.Args[1] == "summary" {
+		sum := float32(0.0)
+		for _, obj := range expenseList {
+			sum += obj.amount
+		}
+		fmt.Println("Total expenses: ", sum)
+		return
+		//Реализация удаления траты из таблицы
+	} else if len(os.Args) == 4 &&
+		os.Args[1] == "delete" &&
+		os.Args[2] == "--id" {
+		id, err := strconv.Atoi(os.Args[3])
+		if err != nil {
+			fmt.Println("Invalid args: id must be integer")
+			return
+		}
+		for _, obj := range expenseList {
+			if obj.id == id {
+				expenseList = removeElem(expenseList, id)
+				var temp [][]string
+				for _, obj := range expenseList {
+					temp = append(temp, obj.toCsv())
+				}
+				writeCsv(csvName, temp)
+				fmt.Println("Success delete")
+				return
+			}
+		}
+		fmt.Println("Invalid args: can't find row with this id->", id)
+		return
+	}
+	fmt.Println("Invalid args")
 }
